@@ -205,19 +205,28 @@ setup_git_ssh() {
 
     eval "$(ssh-agent -s)" &>/dev/null || true
     local config_file="$HOME/.ssh/config"
+    touch "$config_file"
+    chmod 600 "$config_file"
 
     # --- 1. GitHub SSH Setup ---
     local github_key="$HOME/.ssh/id_ed25519"
     if [ ! -f "$github_key" ]; then
-        local github_email=""
-        if [ -t 0 ]; then read -p "Digite seu e-mail do GitHub (ou Pessoal): " github_email; fi
+        local github_email="${GITHUB_EMAIL:-}"
+        if [ -z "$github_email" ] && [ -t 0 ]; then
+            local default_gh_email
+            default_gh_email="$(git config --global user.email || echo "dev@linux.local")"
+            echo -n -e "${CYAN}Digite seu e-mail do GitHub (Pessoal) [Enter para '$default_gh_email']: ${NC}"
+            read -r -t 30 github_email || github_email=""
+            echo ""
+        fi
         [ -z "$github_email" ] && github_email="$(git config --global user.email || echo "dev@linux.local")"
+        
         log_info "Gerando chave SSH Ed25519 para o GitHub ($github_email)..."
-        ssh-keygen -t ed25519 -C "$github_email" -N "" -f "$github_key"
+        ssh-keygen -t ed25519 -C "$github_email" -N "" -f "$github_key" -q
     else
         log_success "Chave SSH do GitHub já existe em: $github_key"
     fi
-    ssh-add "$github_key" &>/dev/null || true
+    ssh-add "$github_key" < /dev/null &>/dev/null || true
 
     if ! grep -q "Host github.com" "$config_file" 2>/dev/null; then
         cat <<EOF >> "$config_file"
@@ -233,15 +242,22 @@ EOF
     # --- 2. GitLab SSH Setup ---
     local gitlab_key="$HOME/.ssh/id_ed25519_gitlab"
     if [ ! -f "$gitlab_key" ]; then
-        local gitlab_email=""
-        if [ -t 0 ]; then read -p "Digite seu e-mail do GitLab (Trabalho): " gitlab_email; fi
+        local gitlab_email="${GITLAB_EMAIL:-}"
+        if [ -z "$gitlab_email" ] && [ -t 0 ]; then
+            local default_gl_email
+            default_gl_email="$(git config --global user.email || echo "trabalho@gitlab.local")"
+            echo -n -e "${CYAN}Digite seu e-mail do GitLab (Trabalho) [Enter para '$default_gl_email']: ${NC}"
+            read -r -t 30 gitlab_email || gitlab_email=""
+            echo ""
+        fi
         [ -z "$gitlab_email" ] && gitlab_email="$(git config --global user.email || echo "trabalho@gitlab.local")"
+        
         log_info "Gerando chave SSH Ed25519 para o GitLab ($gitlab_email)..."
-        ssh-keygen -t ed25519 -C "$gitlab_email" -N "" -f "$gitlab_key"
+        ssh-keygen -t ed25519 -C "$gitlab_email" -N "" -f "$gitlab_key" -q
     else
         log_success "Chave SSH do GitLab já existe em: $gitlab_key"
     fi
-    ssh-add "$gitlab_key" &>/dev/null || true
+    ssh-add "$gitlab_key" < /dev/null &>/dev/null || true
 
     if ! grep -q "Host gitlab.com" "$config_file" 2>/dev/null; then
         cat <<EOF >> "$config_file"
@@ -267,12 +283,12 @@ EOF
     fi
 
     echo -e "\n${YELLOW}${BOLD}=================== SUA CHAVE PÚBLICA GITHUB ===================${NC}"
-    cat "${github_key}.pub"
+    cat "${github_key}.pub" 2>/dev/null || true
     echo -e "${YELLOW}${BOLD}================================================================${NC}"
     echo -e "${CYAN}Adicione no GitHub em: ${BOLD}https://github.com/settings/keys${NC}\n"
 
-    echo -e "${YELLOW}${BOLD}=================== SUA CHAVE PÚBLICA GITLAB ===================${NC}"
-    cat "${gitlab_key}.pub"
+    echo -e "\n${YELLOW}${BOLD}=================== SUA CHAVE PÚBLICA GITLAB ===================${NC}"
+    cat "${gitlab_key}.pub" 2>/dev/null || true
     echo -e "${YELLOW}${BOLD}================================================================${NC}"
     echo -e "${CYAN}Adicione no GitLab em: ${BOLD}https://gitlab.com/-/profile/keys${NC}\n"
 }
