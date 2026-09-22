@@ -105,6 +105,70 @@ setup_base_tools() {
 }
 
 # ------------------------------------------------------------------------------
+# Module 8: Terminal Setup (Zsh, Oh My Zsh, Spaceship Theme & Plugins)
+# ------------------------------------------------------------------------------
+setup_terminal() {
+    log_info "--- [8/8] Configurando Terminal (Zsh, Oh My Zsh, Tema Spaceship e Plugins) ---"
+    check_sudo
+
+    # Install Zsh & Powerline Fonts
+    sudo apt update -y
+    sudo apt install -y zsh fonts-powerline
+
+    # Install Oh My Zsh non-interactively
+    if [ ! -d "$HOME/.oh-my-zsh" ]; then
+        log_info "Instalando Oh My Zsh..."
+        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
+    else
+        log_success "Oh My Zsh já está instalado."
+    fi
+
+    local custom_plugins_dir="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins"
+    local custom_themes_dir="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes"
+    mkdir -p "$custom_plugins_dir" "$custom_themes_dir"
+
+    # Install zsh-autosuggestions
+    if [ ! -d "$custom_plugins_dir/zsh-autosuggestions" ]; then
+        log_info "Instalando plugin zsh-autosuggestions..."
+        git clone https://github.com/zsh-users/zsh-autosuggestions "$custom_plugins_dir/zsh-autosuggestions"
+    fi
+
+    # Install zsh-syntax-highlighting
+    if [ ! -d "$custom_plugins_dir/zsh-syntax-highlighting" ]; then
+        log_info "Instalando plugin zsh-syntax-highlighting..."
+        git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$custom_plugins_dir/zsh-syntax-highlighting"
+    fi
+
+    # Install Spaceship Theme
+    if [ ! -d "$custom_themes_dir/spaceship-prompt" ]; then
+        log_info "Instalando tema Spaceship ZSH..."
+        git clone https://github.com/spaceship-prompt/spaceship-prompt.git "$custom_themes_dir/spaceship-prompt" --depth=1
+        ln -sf "$custom_themes_dir/spaceship-prompt/spaceship.zsh-theme" "$custom_themes_dir/spaceship.zsh-theme"
+    fi
+
+    # Configure ~/.zshrc theme and plugins
+    local zshrc="$HOME/.zshrc"
+    if [ -f "$zshrc" ]; then
+        log_info "Atualizando tema e plugins no $zshrc..."
+        sed -i 's/^ZSH_THEME=.*/ZSH_THEME="spaceship"/' "$zshrc" || echo 'ZSH_THEME="spaceship"' >> "$zshrc"
+        
+        if grep -q "^plugins=(" "$zshrc"; then
+            sed -i 's/^plugins=(.*/plugins=(git python virtualenv z zsh-autosuggestions zsh-syntax-highlighting)/' "$zshrc"
+        else
+            echo 'plugins=(git python virtualenv z zsh-autosuggestions zsh-syntax-highlighting)' >> "$zshrc"
+        fi
+    fi
+
+    # Set Zsh as default shell for user
+    if [ "$SHELL" != "$(which zsh)" ]; then
+        log_info "Definindo Zsh como shell padrão do usuário..."
+        sudo chsh -s "$(which zsh)" "$USER" || true
+    fi
+
+    log_success "Terminal Zsh + Oh My Zsh + Tema Spaceship e Plugins configurados com sucesso!"
+}
+
+# ------------------------------------------------------------------------------
 # Module 2: Docker & Containerization (Web Backend)
 # ------------------------------------------------------------------------------
 setup_docker() {
@@ -498,33 +562,61 @@ show_help() {
     echo -e "  --web           Instala apenas ferramentas Web (Docker, Node, Postgres, Postman, DBeaver)"
     echo -e "  --base          Instala apenas ferramentas base (Git, Node LTS, Python, C++)"
     echo -e "  --docker        Instala apenas Docker CE & Docker Compose V2"
+    echo -e "  --docker-stack  Configura e baixa a stack de containers Docker (Postgres, Redis, Mailpit, Portainer, MinIO)"
     echo -e "  --ssh           Configura chaves SSH (GitHub & GitLab) e GitHub CLI"
     echo -e "  --vscode        Instala VS Code e extensões mapeadas (Web, Game Dev, AI, Temas)"
     echo -e "  --ai            Instala Claude CLI, Antigravity 2.0, Servidores MCP, Plugins e Obsidian"
     echo -e "  --mcp           Configura especificamente os Servidores MCP e Plugins (Claude/Antigravity)"
+    echo -e "  --terminal      Configura Zsh, Oh My Zsh, Tema Spaceship e Plugins (zsh-autosuggestions, zsh-syntax-highlighting)"
+    echo -e "  --clone         Clona todos os repositórios mapeados do seu ambiente"
     echo -e "  -h, --help      Exibe esta ajuda\n"
+}
+
+setup_clone_repos() {
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [ -f "$script_dir/clone_repos.sh" ]; then
+        bash "$script_dir/clone_repos.sh" --all
+    else
+        log_error "Script clone_repos.sh não encontrado em $script_dir"
+    fi
+}
+
+setup_docker_containers() {
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [ -f "$script_dir/setup_docker_stack.sh" ]; then
+        bash "$script_dir/setup_docker_stack.sh"
+    else
+        log_error "Script setup_docker_stack.sh não encontrado em $script_dir"
+    fi
 }
 
 interactive_menu() {
     print_banner
     echo -e "${CYAN}Selecione o modo de instalação:${NC}\n"
-    echo "1) Instalação Completa (Web + Game Dev Stack + MCPs & Extensões)"
+    echo "1) Instalação Completa (Web + Game Dev Stack + Terminal Zsh + MCPs & Extensões)"
     echo "2) Apenas Desenvolvimento de Jogos (Godot 4, Tiled, OpenJDK Android)"
     echo "3) Apenas Desenvolvimento Web (Docker, Postgres, Postman, DBeaver)"
-    echo "4) Seleção Personalizada"
-    echo "5) Sair"
+    echo "4) Configurar Terminal (Zsh, Oh My Zsh, Tema Spaceship e Plugins)"
+    echo "5) Configurar Stack de Containers Docker (Postgres, Redis, Mailpit, Portainer, MinIO)"
+    echo "6) Clonar Repositórios do Ambiente"
+    echo "7) Seleção Personalizada"
+    echo "8) Sair"
     echo ""
-    read -p "Opção [1-5]: " choice
+    read -p "Opção [1-8]: " choice
 
     case "$choice" in
         1)
             setup_base_tools
+            setup_terminal
             setup_docker
             setup_git_ssh
             setup_vscode
             setup_gamedev
             setup_web_tools
             setup_ai_and_productivity
+            setup_docker_containers
             ;;
         2)
             setup_base_tools
@@ -538,15 +630,27 @@ interactive_menu() {
             setup_web_tools
             ;;
         4)
+            setup_terminal
+            ;;
+        5)
+            setup_docker_containers
+            ;;
+        6)
+            setup_clone_repos
+            ;;
+        7)
             read -p "Instalar ferramentas base (Node/Python/Postgres)? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_base_tools
+            read -p "Configurar Terminal Zsh + Oh My Zsh + Tema Spaceship & Plugins? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_terminal
             read -p "Instalar Docker CE & Compose? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_docker
+            read -p "Configurar Stack de Containers Docker? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_docker_containers
             read -p "Configurar Chaves SSH (GitHub & GitLab) & CLI? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_git_ssh
             read -p "Instalar VS Code + Extensões Mapeadas? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_vscode
             read -p "Instalar Suíte Game Dev (Godot 4, Tiled, Android Export)? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_gamedev
             read -p "Instalar Suíte Web (Postman, DBeaver)? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_web_tools
             read -p "Instalar Claude, Antigravity 2.0, Servidores MCP, Plugins e Obsidian? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_ai_and_productivity
+            read -p "Clonar todos os repositórios mapeados do usuário? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_clone_repos
             ;;
-        5) exit 0 ;;
+        8) exit 0 ;;
         *) log_error "Opção inválida."; exit 1 ;;
     esac
 }
@@ -563,21 +667,26 @@ main() {
         case "$1" in
             --all)
                 setup_base_tools
+                setup_terminal
                 setup_docker
                 setup_git_ssh
                 setup_vscode
                 setup_gamedev
                 setup_web_tools
                 setup_ai_and_productivity
+                setup_docker_containers
                 ;;
             --gamedev) setup_base_tools; setup_vscode; setup_gamedev ;;
             --web) setup_base_tools; setup_docker; setup_vscode; setup_web_tools ;;
             --base) setup_base_tools ;;
+            --terminal) setup_terminal ;;
             --docker) setup_docker ;;
+            --docker-stack) setup_docker_containers ;;
             --ssh) setup_git_ssh ;;
             --vscode) setup_vscode ;;
             --ai) setup_ai_and_productivity ;;
             --mcp) setup_mcps_and_plugins ;;
+            --clone) setup_clone_repos ;;
             -h|--help) show_help; exit 0 ;;
             *) log_error "Opção desconhecida: $1"; show_help; exit 1 ;;
         esac
