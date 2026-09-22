@@ -36,6 +36,23 @@ setup_docker_stack() {
         exit 1
     fi
 
+    # Check and fix Docker socket permissions for current shell
+    local docker_cmd="docker"
+    if ! docker ps &>/dev/null; then
+        log_info "Ajustando permissões do socket Docker (/var/run/docker.sock)..."
+        if [ "$EUID" -ne 0 ]; then
+            sudo usermod -aG docker "$USER" 2>/dev/null || true
+            sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
+        else
+            chmod 666 /var/run/docker.sock 2>/dev/null || true
+        fi
+        
+        if ! docker ps &>/dev/null; then
+            log_warn "Usando 'sudo docker' para acessar o daemon do Docker..."
+            docker_cmd="sudo docker"
+        fi
+    fi
+
     local stack_dir="$HOME/.docker-dev-stack"
     mkdir -p "$stack_dir"
 
@@ -63,7 +80,7 @@ setup_docker_stack() {
 
     for img in "${images[@]}"; do
         log_info "Pulling image: $img..."
-        docker pull "$img" || log_warn "Não foi possível baixar $img agora."
+        $docker_cmd pull "$img" || log_warn "Não foi possível baixar $img agora."
     done
 
     # Configuring Aliases in Shell Profiles
@@ -96,8 +113,8 @@ EOF
 
     if [[ "$start_stack" =~ ^[SsYy]?$ ]]; then
         log_info "Iniciando os containers..."
-        docker compose -f "$stack_dir/docker-compose.yml" up -d
-        log_success "Containers iniciados!"
+        $docker_cmd compose -f "$stack_dir/docker-compose.yml" up -d
+        log_success "Containers iniciados com sucesso!"
         echo -e "\n${CYAN}${BOLD}Serviços Disponíveis:${NC}"
         echo "- PostgreSQL 16:  localhost:5432 (user: postgres, pass: postgres, db: dev_db)"
         echo "- Redis 7:        localhost:6379"

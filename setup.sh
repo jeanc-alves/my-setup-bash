@@ -185,11 +185,14 @@ setup_docker() {
         sudo apt update -y
         sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-        # Configure user group
-        log_info "Adicionando usuário $(whoami) ao grupo 'docker'..."
+        # Configure user group and immediate socket permissions
+        log_info "Adicionando usuário $(whoami) ao grupo 'docker' e configurando permissões do socket..."
         sudo usermod -aG docker "$USER" || true
+        sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
         log_success "Docker instalado com sucesso."
     else
+        sudo usermod -aG docker "$USER" 2>/dev/null || true
+        sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
         log_success "Docker já está instalado no sistema."
     fi
 }
