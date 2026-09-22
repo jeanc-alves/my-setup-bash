@@ -608,6 +608,20 @@ setup_docker_containers() {
     fi
 }
 
+ask_confirm() {
+    local prompt="$1"
+    local default="${2:-S}"
+    local resp=""
+    if [ -t 0 ]; then
+        echo -n -e "${CYAN}${prompt} [S/n]: ${NC}"
+        read -r -t 30 resp || resp="$default"
+        echo ""
+    else
+        resp="$default"
+    fi
+    [[ "$resp" =~ ^[SsYy]?$ ]]
+}
+
 interactive_menu() {
     print_banner
     echo -e "${CYAN}Selecione o modo de instalação:${NC}\n"
@@ -620,7 +634,15 @@ interactive_menu() {
     echo "7) Seleção Personalizada"
     echo "8) Sair"
     echo ""
-    read -p "Opção [1-8]: " choice
+    
+    local choice=""
+    if [ -t 0 ]; then
+        echo -n -e "${CYAN}Opção [1-8]: ${NC}"
+        read -r -t 60 choice || choice="1"
+        echo ""
+    else
+        choice="1"
+    fi
 
     case "$choice" in
         1)
@@ -655,16 +677,16 @@ interactive_menu() {
             setup_clone_repos
             ;;
         7)
-            read -p "Instalar ferramentas base (Node/Python/Postgres)? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_base_tools
-            read -p "Configurar Terminal Zsh + Oh My Zsh + Tema Spaceship & Plugins? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_terminal
-            read -p "Instalar Docker CE & Compose? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_docker
-            read -p "Configurar Stack de Containers Docker? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_docker_containers
-            read -p "Configurar Chaves SSH (GitHub & GitLab) & CLI? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_git_ssh
-            read -p "Instalar VS Code + Extensões Mapeadas? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_vscode
-            read -p "Instalar Suíte Game Dev (Godot 4, Tiled, Android Export)? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_gamedev
-            read -p "Instalar Suíte Web (Postman, DBeaver)? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_web_tools
-            read -p "Instalar Claude, Antigravity 2.0, Servidores MCP, Plugins e Obsidian? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_ai_and_productivity
-            read -p "Clonar todos os repositórios mapeados do usuário? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_clone_repos
+            ask_confirm "Instalar ferramentas base (Node/Python/Postgres)?" && setup_base_tools
+            ask_confirm "Configurar Terminal Zsh + Oh My Zsh + Tema Spaceship & Plugins?" && setup_terminal
+            ask_confirm "Instalar Docker CE & Compose?" && setup_docker
+            ask_confirm "Configurar Stack de Containers Docker?" && setup_docker_containers
+            ask_confirm "Configurar Chaves SSH (GitHub & GitLab) & CLI?" && setup_git_ssh
+            ask_confirm "Instalar VS Code + Extensões Mapeadas?" && setup_vscode
+            ask_confirm "Instalar Suíte Game Dev (Godot 4, Tiled, Android Export)?" && setup_gamedev
+            ask_confirm "Instalar Suíte Web (Postman, DBeaver)?" && setup_web_tools
+            ask_confirm "Instalar Claude, Antigravity 2.0, Servidores MCP, Plugins e Obsidian?" && setup_ai_and_productivity
+            ask_confirm "Clonar todos os repositórios mapeados do usuário?" && setup_clone_repos
             ;;
         8) exit 0 ;;
         *) log_error "Opção inválida."; exit 1 ;;

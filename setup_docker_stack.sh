@@ -83,8 +83,18 @@ EOF
     done
 
     echo ""
-    read -p "Deseja iniciar os containers da stack agora? [S/n]: " resp
-    if [[ "$resp" =~ ^[SsYy]?$ ]]; then
+    local start_stack="${START_DOCKER_STACK:-}"
+    if [ -z "$start_stack" ]; then
+        if [ -t 0 ]; then
+            echo -n -e "${CYAN}Deseja iniciar os containers da stack agora? [S/n] [Timeout 30s]: ${NC}"
+            read -r -t 30 start_stack || start_stack="S"
+            echo ""
+        else
+            start_stack="S"
+        fi
+    fi
+
+    if [[ "$start_stack" =~ ^[SsYy]?$ ]]; then
         log_info "Iniciando os containers..."
         docker compose -f "$stack_dir/docker-compose.yml" up -d
         log_success "Containers iniciados!"
