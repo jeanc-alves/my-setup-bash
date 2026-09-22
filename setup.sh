@@ -214,10 +214,10 @@ EOF
 }
 
 # ------------------------------------------------------------------------------
-# Module 4: VS Code (Web & Game Dev Extensions)
+# Module 4: VS Code (Mapped Extensions for Web, Game Dev, AI & UI)
 # ------------------------------------------------------------------------------
 setup_vscode() {
-    log_info "--- [4/7] Instalando VS Code e Extensões (Web & Game Dev) ---"
+    log_info "--- [4/8] Instalando VS Code e Extensões Mapeadas ---"
     
     if ! command -v code &>/dev/null; then
         check_sudo
@@ -228,21 +228,110 @@ setup_vscode() {
         sudo apt install -y code
     fi
 
-    log_info "Instalando extensões recomendadas do VS Code..."
+    log_info "Instalando extensões mapeadas do VS Code..."
     local extensions=(
+        # AI Assistants
+        "anthropic.claude-code"
+        # Game Development
         "geequlim.godot-tools"
         "ms-python.python"
-        "eamodio.gitlens"
-        "ms-azuretools.vscode-docker"
+        # Web Development & Frontend
         "dbaeumer.vscode-eslint"
         "esbenp.prettier-vscode"
+        "bradlc.vscode-tailwindcss"
+        "clinyong.vscode-css-modules"
+        "dsznajder.es7-react-js-snippets"
+        "willstakayama.vscode-nextjs-snippets"
+        "styled-components.vscode-styled-components"
+        "ritwickdey.liveserver"
+        # DevOps & Tools
+        "ms-azuretools.vscode-docker"
+        "eamodio.gitlens"
+        # UI, Preview & Diagrams
+        "simonsiefke.svg-preview"
+        "mermaidchart.vscode-mermaid-chart"
+        "shd101wyy.markdown-preview-enhanced"
+        "naumovs.color-highlight"
+        # Themes & Icons
+        "dracula-theme.theme-dracula"
+        "robbowen.synthwave-vscode"
         "PKief.material-icon-theme"
     )
 
     for ext in "${extensions[@]}"; do
+        log_info "Verificando/Instalando extensão: $ext"
         code --install-extension "$ext" --force &>/dev/null || true
     done
-    log_success "VS Code configurado."
+    log_success "VS Code e extensões mapeadas configuradas com sucesso."
+}
+
+# ------------------------------------------------------------------------------
+# Module 5: MCP Servers & Plugins (Claude & Antigravity)
+# ------------------------------------------------------------------------------
+setup_mcps_and_plugins() {
+    log_info "--- Mapeamento e Configuração de Servidores MCP e Plugins (Claude & Antigravity) ---"
+
+    local claude_dir="$HOME/.claude"
+    local antigravity_dir="$HOME/.antigravity"
+    mkdir -p "$claude_dir" "$antigravity_dir/mcp" "$antigravity_dir/plugins" "$claude_dir/plugins"
+
+    # Mapeamento e Criação do mcp.json para Claude e Antigravity
+    local mcp_config='{
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@yawlabs/postgres-mcp"],
+      "description": "PostgreSQL database access for Web & Dev databases"
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+      "description": "Headless browser automation and testing"
+    },
+    "figma": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-figma"],
+      "description": "Figma design system & UI asset inspection"
+    },
+    "obsidian-rag": {
+      "command": "npx",
+      "args": ["-y", "obsidian-rag-mcp"],
+      "description": "Obsidian vault knowledge base & note manager"
+    }
+  }
+}'
+
+    log_info "Atualizando mapeamento de Servidores MCP (~/.claude/mcp.json)..."
+    if [ ! -f "$claude_dir/mcp.json" ]; then
+        echo "$mcp_config" > "$claude_dir/mcp.json"
+    else
+        log_info "Arquivo ~/.claude/mcp.json existente mantido."
+    fi
+
+    if [ ! -f "$antigravity_dir/mcp.json" ]; then
+        echo "$mcp_config" > "$antigravity_dir/mcp.json"
+    fi
+
+    # Mapeamento de Plugins / Skills recomendadas (Chrome DevTools & Android CLI)
+    log_info "Configurando Plugins mapeados (Chrome DevTools & Android CLI)..."
+    cat <<'EOF' > "$antigravity_dir/plugins/plugins.json"
+{
+  "plugins": [
+    {
+      "name": "chrome-devtools-plugin",
+      "description": "Web debugging, accessibility (a11y) auditing, LCP performance and memory leak debugging.",
+      "skills": ["a11y-debugging", "chrome-devtools", "debug-optimize-lcp", "memory-leak-debugging", "troubleshooting"]
+    },
+    {
+      "name": "android-cli-plugin",
+      "description": "Android CLI, SDK manager, AVD management and official documentation lookup.",
+      "skills": ["android-cli"]
+    }
+  ]
+}
+EOF
+    cp "$antigravity_dir/plugins/plugins.json" "$claude_dir/plugins/plugins.json" 2>/dev/null || true
+    log_success "Servidores MCP e Plugins mapeados configurados!"
 }
 
 # ------------------------------------------------------------------------------
@@ -391,7 +480,10 @@ EOF
         sudo snap install obsidian --classic || true
     fi
 
-    log_success "Ambiente de IA e Documentação configurado!"
+    # Configure MCP Servers & Plugins
+    setup_mcps_and_plugins
+
+    log_success "Ambiente de IA, Servidores MCP e Documentação configurado!"
 }
 
 # ------------------------------------------------------------------------------
@@ -401,21 +493,22 @@ show_help() {
     print_banner
     echo -e "Uso: ./setup.sh [OPÇÕES]\n"
     echo -e "Opções:"
-    echo -e "  --all           Instala TODO o ambiente (Web + Game Dev)"
+    echo -e "  --all           Instala TODO o ambiente (Web + Game Dev + MCPs/Plugins)"
     echo -e "  --gamedev       Instala apenas ferramentas de Jogos (Godot 4, Tiled, Android Export SDK)"
     echo -e "  --web           Instala apenas ferramentas Web (Docker, Node, Postgres, Postman, DBeaver)"
     echo -e "  --base          Instala apenas ferramentas base (Git, Node LTS, Python, C++)"
     echo -e "  --docker        Instala apenas Docker CE & Docker Compose V2"
-    echo -e "  --ssh           Configura chave SSH e GitHub CLI"
-    echo -e "  --vscode        Instala VS Code e extensões Web/Game"
-    echo -e "  --ai            Instala Claude CLI, Antigravity 2.0 e Obsidian"
+    echo -e "  --ssh           Configura chaves SSH (GitHub & GitLab) e GitHub CLI"
+    echo -e "  --vscode        Instala VS Code e extensões mapeadas (Web, Game Dev, AI, Temas)"
+    echo -e "  --ai            Instala Claude CLI, Antigravity 2.0, Servidores MCP, Plugins e Obsidian"
+    echo -e "  --mcp           Configura especificamente os Servidores MCP e Plugins (Claude/Antigravity)"
     echo -e "  -h, --help      Exibe esta ajuda\n"
 }
 
 interactive_menu() {
     print_banner
     echo -e "${CYAN}Selecione o modo de instalação:${NC}\n"
-    echo "1) Instalação Completa (Web + Game Dev Stack)"
+    echo "1) Instalação Completa (Web + Game Dev Stack + MCPs & Extensões)"
     echo "2) Apenas Desenvolvimento de Jogos (Godot 4, Tiled, OpenJDK Android)"
     echo "3) Apenas Desenvolvimento Web (Docker, Postgres, Postman, DBeaver)"
     echo "4) Seleção Personalizada"
@@ -448,10 +541,10 @@ interactive_menu() {
             read -p "Instalar ferramentas base (Node/Python/Postgres)? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_base_tools
             read -p "Instalar Docker CE & Compose? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_docker
             read -p "Configurar Chaves SSH (GitHub & GitLab) & CLI? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_git_ssh
-            read -p "Instalar VS Code + Extensões? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_vscode
+            read -p "Instalar VS Code + Extensões Mapeadas? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_vscode
             read -p "Instalar Suíte Game Dev (Godot 4, Tiled, Android Export)? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_gamedev
             read -p "Instalar Suíte Web (Postman, DBeaver)? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_web_tools
-            read -p "Instalar Claude, Antigravity 2.0 e Obsidian? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_ai_and_productivity
+            read -p "Instalar Claude, Antigravity 2.0, Servidores MCP, Plugins e Obsidian? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_ai_and_productivity
             ;;
         5) exit 0 ;;
         *) log_error "Opção inválida."; exit 1 ;;
@@ -484,6 +577,7 @@ main() {
             --ssh) setup_git_ssh ;;
             --vscode) setup_vscode ;;
             --ai) setup_ai_and_productivity ;;
+            --mcp) setup_mcps_and_plugins ;;
             -h|--help) show_help; exit 0 ;;
             *) log_error "Opção desconhecida: $1"; show_help; exit 1 ;;
         esac
