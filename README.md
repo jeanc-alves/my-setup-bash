@@ -1,99 +1,69 @@
-# Linux Development Environment Setup Script
+# Linux Web & Game Development Setup Script
 
-Script automatizado e modular em Bash para instalação e preparação de ambiente de desenvolvimento completo em sistemas Linux (Ubuntu / Debian / derivados).
+Script automatizado e modular em Bash para instalação e preparação de um ambiente de desenvolvimento **focado exclusivamente em Desenvolvimento Web e Desenvolvimento de Jogos (Game Dev)** no Linux (Ubuntu / Debian).
 
-## 🚀 Componentes Instalados e Configurados
+## 🎮 Suíte de Desenvolvimento de Jogos (Game Dev)
 
-1. **Ferramentas Base de Desenvolvimento (`--base`)**:
-   - `build-essential`, `curl`, `wget`, `git`, `unzip`, `zip`, `jq`, `gnupg`, `ca-certificates`.
-   - Ambiente **Python 3** (`python3-pip`, `python3-venv`).
-   - Ambiente **Node.js LTS** via NVM (Node Version Manager).
+- **Godot Engine 4 (Stable)**: Download do binário oficial de 64-bit instalado em `~/.local/bin/godot`, atalho `.desktop` no menu do sistema e integração do servidor de linguagem GDScript (LSP porta 6005) e executável no VS Code (`settings.json`).
+- **Tiled Map Editor**: Editor de mapas e tilemaps 2D essencial para criação de níveis de jogos.
+- **Android Export SDK**: Instalação do OpenJDK 17 (`openjdk-17-jdk`) e ADB (`android-tools-adb`) para compilar e testar jogos em dispositivos Android.
 
-2. **Configuração de SSH e GitHub CLI (`--ssh`)**:
-   - Geração automatizada de chave SSH `ed25519` em `~/.ssh/id_ed25519`.
-   - Inicialização do `ssh-agent` e adição da chave.
-   - Configuração do arquivo `~/.ssh/config` com permissões seguras (`600`).
-   - Instalação e configuração do **GitHub CLI (`gh`)**.
+## 🌐 Suíte de Desenvolvimento Web
 
-3. **VS Code & Extensões (`--vscode`)**:
-   - Adição do repositório oficial da Microsoft e instalação do `code`.
-   - Instalação das extensões: `geequlim.godot-tools`, `ms-python.python`, `eamodio.gitlens`, `esbenp.prettier-vscode`, `dbaeumer.vscode-eslint`, `PKief.material-icon-theme`.
+- **Node.js LTS, Yarn e pnpm**: Gerenciamento avançado de pacotes frontend e backend.
+- **Docker CE & Docker Compose V2**: Containerização completa de serviços Web e bancos de dados.
+- **PostgreSQL Client (`psql`) & SQLite3**: Utilitários de linha de comando para bancos de dados.
+- **Postman**: Testes e desenvolvimento de APIs REST/GraphQL.
+- **DBeaver CE**: Interface gráfica universal para gerenciamento de banco de dados.
 
-4. **Godot Engine 4 (`--godot`)**:
-   - Download automatizado da versão estável mais recente do **Godot 4** (Linux 64-bit).
-   - Instalação do binário em `~/.local/bin/godot`.
-   - Criação de atalho de aplicativo para o menu do sistema (`~/.local/share/applications/godot.desktop`).
-   - Integração com VS Code (`settings.json`) configurando o caminho do executável e porta LSP GDScript (`6005`).
+## 🧠 Produtividade, IA & IDE
 
-5. **Claude CLI / Code (`--claude`)**:
-   - Instalação global da CLI oficial `@anthropic-ai/claude-code` via npm.
-
-6. **Ambiente Antigravity 2.0 (`--antigravity`)**:
-   - Estruturação do diretório `~/.antigravity` (bin, config, plugins).
-   - Criação e inclusão do script de ambiente `env.sh` no `~/.bashrc` / `~/.zshrc`.
-   - Wrapper CLI executável `antigravity` e aliases como `ag`, `godot-dev` e `code-here`.
+- **VS Code**: Com extensões pré-configuradas para Web e Jogos (`geequlim.godot-tools`, `ms-azuretools.vscode-docker`, `dbaeumer.vscode-eslint`, `esbenp.prettier-vscode`, `eamodio.gitlens`, `ms-python.python`).
+- **Claude CLI**: CLI oficial do Claude (`@anthropic-ai/claude-code`).
+- **Antigravity 2.0**: Ambiente `~/.antigravity`, CLI executável e aliases práticos (`ag`, `godot-dev`, `code-here`, `dcup`, `dcdown`).
+- **Obsidian**: Gestão de conhecimento, Game Design Docs (GDD) e arquitetura de sistemas.
+- **GitHub SSH & CLI (`gh`)**: Geração de chave `ed25519`, `~/.ssh/config` e autenticação rápida no GitHub.
 
 ---
 
 ## 💻 Como Usar
 
-### 1. Dar permissão de execução (se necessário)
+### 1. Dar permissão de execução
 ```bash
 chmod +x setup.sh
 ```
 
-### 2. Modo Interativo (Menu com opções)
-Execute o script sem argumentos para abrir o menu interativo:
+### 2. Modo Interativo
+Execute o script sem argumentos para abrir o menu interativo com opções para Web, Game Dev ou Completo:
 ```bash
 ./setup.sh
 ```
 
-### 3. Instalação Completa (Silenciosa / Automatizada)
-Para instalar todos os componentes de uma vez:
+### 3. Instalação Completa (Web + Game Dev)
 ```bash
 ./setup.sh --all
 ```
 
-### 4. Instalação de Módulos Específicos
-Você pode combinar flags para instalar apenas o que precisa:
+### 4. Instalar Apenas Stack de Jogos
 ```bash
-# Instalar apenas Godot 4 e VS Code
-./setup.sh --godot --vscode
-
-# Configurar apenas SSH do GitHub e Claude CLI
-./setup.sh --ssh --claude
+./setup.sh --gamedev
 ```
 
-### 5. Ajuda e Parâmetros
+### 5. Instalar Apenas Stack Web
+```bash
+./setup.sh --web
+```
+
+### 6. Opções CLI Disponíveis
 ```bash
 ./setup.sh --help
 ```
 
----
-
-## 📋 Passos Pós-Instalação Recomendados
-
-1. **Atualizar Sessão do Terminal**:
-   ```bash
-   source ~/.bashrc   # Ou source ~/.zshrc
-   ```
-
-2. **Vincular Chave SSH ao GitHub**:
-   Execute o comando abaixo para visualizar sua chave pública e adicione-a em [https://github.com/settings/keys](https://github.com/settings/keys):
-   ```bash
-   cat ~/.ssh/id_ed25519.pub
-   ```
-   Ou autentique-se via GitHub CLI:
-   ```bash
-   gh auth login
-   ```
-
-3. **Autenticar o Claude CLI**:
-   Defina sua chave de API Anthropic:
-   ```bash
-   export ANTHROPIC_API_KEY="seu_token_aqui"
-   ```
-   E execute o comando:
-   ```bash
-   claude
-   ```
+- `--all`: Instala TODO o ambiente (Web + Game Dev)
+- `--gamedev`: Instala apenas a stack de jogos (Godot 4, Tiled, Android Export SDK)
+- `--web`: Instala apenas a stack Web (Docker, Node, Postgres, Postman, DBeaver)
+- `--base`: Instala ferramentas base (Git, Node LTS, Python, Yarn, pnpm)
+- `--docker`: Instala Docker CE e Docker Compose V2
+- `--ssh`: Configura chave SSH e GitHub CLI
+- `--vscode`: Instala VS Code e extensões Web/Game Dev
+- `--ai`: Instala Claude CLI, Antigravity 2.0 e Obsidian
