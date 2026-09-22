@@ -22,7 +22,7 @@ Script automatizado e modular em Bash para instalação e preparação de um amb
 - **Claude CLI**: CLI oficial do Claude (`@anthropic-ai/claude-code`).
 - **Antigravity 2.0**: Ambiente `~/.antigravity`, CLI executável e aliases práticos (`ag`, `godot-dev`, `code-here`, `dcup`, `dcdown`).
 - **Obsidian**: Gestão de conhecimento, Game Design Docs (GDD) e arquitetura de sistemas.
-- **GitHub SSH & CLI (`gh`)**: Geração de chave `ed25519`, `~/.ssh/config` e autenticação rápida no GitHub.
+- **GitHub & GitLab SSH Config**: Geração automatizada de chaves SSH `ed25519` separadas para **GitHub** (`~/.ssh/id_ed25519`) e **GitLab** (`~/.ssh/id_ed25519_gitlab`), configuração de `~/.ssh/config` com permissões 600 e exibição das chaves públicas para vinculação fácil. Instalação e integração do **GitHub CLI (`gh`)**.
 
 ---
 

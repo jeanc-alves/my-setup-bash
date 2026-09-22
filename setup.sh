@@ -131,29 +131,30 @@ setup_docker() {
 }
 
 # ------------------------------------------------------------------------------
-# Module 3: GitHub SSH & GitHub CLI
+# Module 3: GitHub & GitLab SSH Configuration & GitHub CLI
 # ------------------------------------------------------------------------------
-setup_github_ssh() {
-    log_info "--- [3/7] Configurando Chave SSH e GitHub CLI ---"
+setup_git_ssh() {
+    log_info "--- [3/7] Configurando Chaves SSH (GitHub & GitLab) e GitHub CLI ---"
     
     mkdir -p "$HOME/.ssh"
     chmod 700 "$HOME/.ssh"
-    local ssh_key="$HOME/.ssh/id_ed25519"
-
-    if [ ! -f "$ssh_key" ]; then
-        local email=""
-        if [ -t 0 ]; then read -p "Digite seu e-mail do GitHub: " email; fi
-        [ -z "$email" ] && email="$(git config --global user.email || echo "dev@linux.local")"
-        log_info "Gerando chave SSH Ed25519 para: $email"
-        ssh-keygen -t ed25519 -C "$email" -N "" -f "$ssh_key"
-    else
-        log_success "Chave SSH Ed25519 já existe em: $ssh_key"
-    fi
 
     eval "$(ssh-agent -s)" &>/dev/null || true
-    ssh-add "$ssh_key" &>/dev/null || true
-
     local config_file="$HOME/.ssh/config"
+
+    # --- 1. GitHub SSH Setup ---
+    local github_key="$HOME/.ssh/id_ed25519"
+    if [ ! -f "$github_key" ]; then
+        local github_email=""
+        if [ -t 0 ]; then read -p "Digite seu e-mail do GitHub (ou Pessoal): " github_email; fi
+        [ -z "$github_email" ] && github_email="$(git config --global user.email || echo "dev@linux.local")"
+        log_info "Gerando chave SSH Ed25519 para o GitHub ($github_email)..."
+        ssh-keygen -t ed25519 -C "$github_email" -N "" -f "$github_key"
+    else
+        log_success "Chave SSH do GitHub já existe em: $github_key"
+    fi
+    ssh-add "$github_key" &>/dev/null || true
+
     if ! grep -q "Host github.com" "$config_file" 2>/dev/null; then
         cat <<EOF >> "$config_file"
 
@@ -163,9 +164,35 @@ Host github.com
     IdentityFile ~/.ssh/id_ed25519
     AddKeysToAgent yes
 EOF
-        chmod 600 "$config_file"
     fi
 
+    # --- 2. GitLab SSH Setup ---
+    local gitlab_key="$HOME/.ssh/id_ed25519_gitlab"
+    if [ ! -f "$gitlab_key" ]; then
+        local gitlab_email=""
+        if [ -t 0 ]; then read -p "Digite seu e-mail do GitLab (Trabalho): " gitlab_email; fi
+        [ -z "$gitlab_email" ] && gitlab_email="$(git config --global user.email || echo "trabalho@gitlab.local")"
+        log_info "Gerando chave SSH Ed25519 para o GitLab ($gitlab_email)..."
+        ssh-keygen -t ed25519 -C "$gitlab_email" -N "" -f "$gitlab_key"
+    else
+        log_success "Chave SSH do GitLab já existe em: $gitlab_key"
+    fi
+    ssh-add "$gitlab_key" &>/dev/null || true
+
+    if ! grep -q "Host gitlab.com" "$config_file" 2>/dev/null; then
+        cat <<EOF >> "$config_file"
+
+Host gitlab.com
+    HostName gitlab.com
+    User git
+    IdentityFile ~/.ssh/id_ed25519_gitlab
+    AddKeysToAgent yes
+EOF
+    fi
+
+    chmod 600 "$config_file"
+
+    # --- 3. GitHub CLI ---
     if ! command -v gh &>/dev/null; then
         check_sudo
         sudo mkdir -p -m 755 /etc/apt/keyrings
@@ -176,8 +203,14 @@ EOF
     fi
 
     echo -e "\n${YELLOW}${BOLD}=================== SUA CHAVE PÚBLICA GITHUB ===================${NC}"
-    cat "${ssh_key}.pub"
-    echo -e "${YELLOW}${BOLD}================================================================${NC}\n"
+    cat "${github_key}.pub"
+    echo -e "${YELLOW}${BOLD}================================================================${NC}"
+    echo -e "${CYAN}Adicione no GitHub em: ${BOLD}https://github.com/settings/keys${NC}\n"
+
+    echo -e "${YELLOW}${BOLD}=================== SUA CHAVE PÚBLICA GITLAB ===================${NC}"
+    cat "${gitlab_key}.pub"
+    echo -e "${YELLOW}${BOLD}================================================================${NC}"
+    echo -e "${CYAN}Adicione no GitLab em: ${BOLD}https://gitlab.com/-/profile/keys${NC}\n"
 }
 
 # ------------------------------------------------------------------------------
@@ -394,7 +427,7 @@ interactive_menu() {
         1)
             setup_base_tools
             setup_docker
-            setup_github_ssh
+            setup_git_ssh
             setup_vscode
             setup_gamedev
             setup_web_tools
@@ -414,7 +447,7 @@ interactive_menu() {
         4)
             read -p "Instalar ferramentas base (Node/Python/Postgres)? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_base_tools
             read -p "Instalar Docker CE & Compose? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_docker
-            read -p "Configurar GitHub SSH & CLI? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_github_ssh
+            read -p "Configurar Chaves SSH (GitHub & GitLab) & CLI? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_git_ssh
             read -p "Instalar VS Code + Extensões? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_vscode
             read -p "Instalar Suíte Game Dev (Godot 4, Tiled, Android Export)? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_gamedev
             read -p "Instalar Suíte Web (Postman, DBeaver)? [S/n]: " r; [[ "$r" =~ ^[SsYy]?$ ]] && setup_web_tools
@@ -438,7 +471,7 @@ main() {
             --all)
                 setup_base_tools
                 setup_docker
-                setup_github_ssh
+                setup_git_ssh
                 setup_vscode
                 setup_gamedev
                 setup_web_tools
@@ -448,7 +481,7 @@ main() {
             --web) setup_base_tools; setup_docker; setup_vscode; setup_web_tools ;;
             --base) setup_base_tools ;;
             --docker) setup_docker ;;
-            --ssh) setup_github_ssh ;;
+            --ssh) setup_git_ssh ;;
             --vscode) setup_vscode ;;
             --ai) setup_ai_and_productivity ;;
             -h|--help) show_help; exit 0 ;;
